@@ -31,21 +31,47 @@ def move_on_board(n: int, tac: str):
 def check_win_conditions():
     global board_array
 
-    # check for diagonal wins
+    # check left diagonal win
+    if (board_array[0][0] == board_array[1][1]) and \
+            (board_array[1][1] == board_array[2][2]):
+        if "X" in board_array[0][0]:
+            return 2
+        else:
+            return 1
+    # check right diagonal win
+    if (board_array[0][2] == board_array[1][1]) and \
+            (board_array[1][1] == board_array[2][0]):
+        if "X" in board_array[0][2]:
+            return 2
+        else:
+            return 1
 
     # check for row wins
     for row in board_array:
-        if (board_array[row][0] == board_array[row][1]) and \
-                (board_array[row][1] == board_array[row][2]):
-            if board_array[row][0].contains('X'):
+        if (row[0] == row[1]) and \
+                (row[1] == row[2]):
+            if "X" in row[0]:
                 return 2
-            else:
+            elif "O" in row[0]:
                 return 1
-    # check for column wins
 
+    # check for column wins
+    for i in range(0, 3):
+        if (board_array[0][i] == board_array[1][i]) and \
+                (board_array[1][i] == board_array[2][i]):
+            if "X" in board_array[0][i]:
+                return 2
+            elif "O" in board_array[0][i]:
+                return 1
     return 0
 
 
-move_on_board(3, 'X ')
-move_on_board(5, 'O ')
+move_on_board(3, '0 ')
+move_on_board(5, '0 ')
+move_on_board(7, '0 ')
+
 print_board()
+if check_win_conditions() == 2:
+    print("O player wins!")
+elif check_win_conditions() == 1:
+    print("X player wins!")
