@@ -1,8 +1,9 @@
 from sys import argv
+from socket import socket
 
 # command line args
-#hostname = argv[1]
-#port = int(argv[2])
+hostname = argv[1]
+port = int(argv[2])
 
 # boolean for exiting; starts as True
 running = True
@@ -30,6 +31,9 @@ commands = {
 }
 
 if __name__ == '__main__':
+    client_soc = socket(AF_INET, SOCK_STREAM)
+    client_soc.connect( (hostname, port) )
+    
     while running:
         cmd = input('Type a command (or help if you are not sure): ')
         sanitized = cmd.strip() # strip beginning & ending whitespace
