@@ -1,5 +1,5 @@
 from sys import argv
-from socket import socket
+from socket import *
 
 # command line args
 hostname = argv[1]
@@ -12,15 +12,31 @@ def help_cmd(exec_args):
     print('This is the help menu')
 
 def login(exec_args):
-    pass
+    if not exec_args['c_args']:
+        print('You must choose a name to login as')
+    else:
+        username = exec_args['c_args'][0]
+        exec_args['socket'].send(username.encode())
+        ack = exec_args['socket'].recv()
+        ack = ack.decode()
+        
+        if ack == 'y':
+            # if server responds with 'y', it worked
+            print('Your username is now %s' % (username,))
+        elif ack == 't':
+            # if server responsds with 't', that username is taken already
+            print('That username is already taken')
+        else:
+            print('Could not decode server response')
 
 def place(exec_args):
-    print(exec_args['socket'])
-    print(exec_args['cmd_args'])
+    pass
 
 def exit_game(exec_args):
     global running
+
     running = False
+    exec_args['socket'].close()
     print('Thanks for playing')
 
 commands = {
@@ -31,21 +47,25 @@ commands = {
 }
 
 if __name__ == '__main__':
-    client_soc = socket(AF_INET, SOCK_STREAM)
-    client_soc.connect( (hostname, port) )
-    
-    while running:
-        cmd = input('Type a command (or help if you are not sure): ')
-        sanitized = cmd.strip() # strip beginning & ending whitespace
-        parse_list = sanitized.split(' ', 1)
+    if not argv[1] and arg[2]:
+        print('This program needs a hostname and port')
+    else: 
+        client_soc = socket.socket(AF_INET, SOCK_STREAM)
+        client_soc.connect( (hostname, port) )
+        
+        while running:
+            cmd = input('Type a command (or help if you are not sure): ')
+            sanitized = cmd.strip() # strip beginning & ending whitespace
+            parse_list = sanitized.split(' ', 1) # split into func name and rest of args
 
-        exec_func = parse_list[0] # take out the actual function call
-        exec_args = { 'socket': 3} # always gets passed to the command functions
+            exec_func = parse_list[0] # take out the actual function call
+            exec_args = { 'socket': client_soc} # always gets passed to the command functions
 
-        if len(parse_list) > 1:
-            # if a command takes args, then the functions now have access to them
-            exec_args['cmd_args'] = list(filter(lambda x: x != '', parse_list[1].split(' '))) 
-        if exec_func not in commands:
-            print('Not a valid command')
-        else:
-            commands[exec_func](exec_args)
+            if len(parse_list) > 1:
+                # if a command takes args, then the functions now have access to them
+                exec_args['c_args'] = list(filter(lambda x: x != '', parse_list[1].split(' '))) 
+
+            if exec_func not in commands:
+                print('Not a valid command')
+            else:
+                commands[exec_func](exec_args)
