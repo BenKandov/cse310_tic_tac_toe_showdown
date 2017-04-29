@@ -39,6 +39,7 @@ def exit_game(exec_args):
     exec_args['socket'].close()
     print('Thanks for playing')
 
+# dictionary of function pointers to make cmd parsing easy
 commands = {
         'help': help_cmd,
         'login': login,
