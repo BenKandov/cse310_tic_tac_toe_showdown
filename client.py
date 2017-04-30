@@ -27,10 +27,24 @@ def login(exec_args):
             # if server responsds with 't', that username is taken already
             print('That username is already taken')
         else:
+            # the protocol is not being followed if you end up here
             print('Could not decode server response')
 
 def place(exec_args):
-    pass
+    if not exec_args['c_args']:
+        print('Which cell you like to make your move in?')
+    else:
+        cell = exec_args['c_args']
+        exec_args['socket'].send(str(cell).encode()) # sending cell as a string
+        ack = exec_args['socket'].recv()
+        ack = ack.decode()
+
+        if ack == 'n':
+            # server sent back an error, illegal move
+            print('Illegal move')
+        else:
+            # server sent back a board you can print
+            print(ack)
 
 def exit_game(exec_args):
     global running
@@ -48,7 +62,7 @@ commands = {
 }
 
 if __name__ == '__main__':
-    if not argv[1] and arg[2]:
+    if not argv[1] and not arg[2]:
         print('This program needs a hostname and port')
     else: 
         client_soc = socket.socket(AF_INET, SOCK_STREAM)
