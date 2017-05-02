@@ -158,13 +158,18 @@ bad_format = "400 ERROR\nMALFORMED MESSAGE\r\n"
 name_taken = "400 ERROR\nUsername is already taken\r\n"
 success = "200 OK\nSUCCESS\r\n"
 who_success = "200 OWH\nSUCCESS\r\n "
+games_success = "200 SEMAG\nSUCCESS\r\n "
 carriage = "\r\n"
+newline = '\n'
+player_one_intro = 'Player X is: '
+player_two_intro = 'Player O is: '
 #PROTOCOL CONSTANTS
 
 class ThreadedTCPCommunicationHandler(BaseRequestHandler):
 
     def handle(self):
         global player_list
+        global games_list
         player_name = ""
         logged_in = False
         in_lobby = False
@@ -181,7 +186,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                             player_name = username
                             logged_in = True
                             in_lobby = True
-                            
+
                         else:
                             self.request.sendall(name_taken.encode())
                     else:
@@ -198,14 +203,25 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         for player in player_list:
                             if player.player_name != player_name:
                                 self.request.sendall(player.player_name.encode())
-                                self.request.sendall(carriage.encode())
-
+                                self.request.sendall(newline.encode())
+                        self.request.sendall(carriage.encode())
                     else:
                         self.request.sendall(bad_format.encode())
                 elif "PLAY" in string_message:
                     pass
                 elif "GAMES" in string_message:
-                    pass
+                    return_str = string_message.split("GAMES")[1]
+                    if '\r\n' in return_str:
+                        self.request.sendall(games_success.encode())
+                        for game in games_list:
+                            self.request.sendall(player_one_intro.encode())
+                            self.request.sendall(game.player_x.encode())
+                            self.request.sendall(player_two_intro.encode())
+                            self.request.sendall(game.player_o.encode())
+                            self.request.sendall(newline.encode())
+                        self.request.sendall(carriage.encode())
+                    else:
+                        self.request.sendall(bad_format.encode())
                 else:
                     self.request.sendall(bad_format.encode())
 
