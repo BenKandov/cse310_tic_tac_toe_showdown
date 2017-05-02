@@ -1,3 +1,5 @@
+from socket import *
+
 class Player:
     def __init__(self, player_name):
         self.aval = True
@@ -29,9 +31,9 @@ player_list = []
 games_list = []
 
 def start_game():
-
+    pass
 def end_game():
-
+    pass
 
 def search_for_player_name(player_name):
     global player_list
@@ -139,3 +141,9 @@ if check_win_conditions() == 2:
     print("O player wins!")
 elif check_win_conditions() == 1:
     print("X player wins!")
+
+
+
+
+
+
