@@ -68,6 +68,11 @@ def who_command(player_name):
         if player.player_name != player_name:
             print(player.player_name)
 
+# variables for keeping track of game state
+
+board_array = [['. ' for x in range(3)] for y in range(3)]
+
+
 
 def print_board():
     global board_array
