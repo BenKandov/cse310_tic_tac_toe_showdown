@@ -155,27 +155,61 @@ elif check_win_conditions() == 1:
 #PROTOCOL CONSTANTS
 
 bad_format = "400 ERROR\nMALFORMED MESSAGE\r\n"
-name_taken = "400 ERROR\n Username is already taken\r\n"
-success = "200 OK\n SUCCESS\r\n"
+name_taken = "400 ERROR\nUsername is already taken\r\n"
+success = "200 OK\nSUCCESS\r\n"
+who_success = "200 OWH\nSUCCESS\r\n "
+carriage = "\r\n"
 #PROTOCOL CONSTANTS
 
 class ThreadedTCPCommunicationHandler(BaseRequestHandler):
+
     def handle(self):
+        global player_list
+        player_name = ""
+        logged_in = False
+        in_lobby = False
         while(1):
-            self.data = self.request.recv(1024)
-            string_message = self.data.decode("utf-8")
-            if 'LOGIN' in string_message:
-                return_str = string_message.split("LOGIN")[1]
-                if '\r\n' in return_str:
-                    username = string_message.split("\r\n")[0]
-                    if login(username):
-                        self.request.sendall(success.encode())
+            if not logged_in:
+                self.data = self.request.recv(1024)
+                string_message = self.data.decode("utf-8")
+                if 'LOGIN ' in string_message:
+                    return_str = string_message.split("LOGIN ")[1]
+                    if '\r\n' in return_str:
+                        username = return_str.split("\r\n")[0]
+                        if login(username):
+                            self.request.sendall(success.encode())
+                            player_name = username
+                            logged_in = True
+                            in_lobby = True
+                        else:
+                            self.request.sendall(name_taken.encode())
                     else:
-                        self.request.sendall(name_taken.encode())
+                        self.request.sendall(bad_format.encode())
                 else:
                     self.request.sendall(bad_format.encode())
-            else:
-                self.request.sendall(bad_format.encode())
+            elif in_lobby:
+                self.data = self.request.recv(1024)
+                string_message = self.data.decode("utf-8")
+                if "WHO" in string_message:
+                    return_str = string_message.split("WHO")[1]
+                    if '\r\n' in return_str:
+                        self.request.sendall(who_success.encode())
+                        for player in player_list:
+                            if player.player_name != player_name:
+                                self.request.sendall(player.player_name.encode())
+                                self.request.sendall(carriage.encode())
+
+                    else:
+                        self.request.sendall(bad_format.encode())
+                elif "PLAY" in string_message:
+                    pass
+                elif "GAMES" in string_message:
+                    pass
+                else:
+                    self.request.sendall(bad_format.encode())
+
+
+
 class ThreadedTCPServer(ThreadingMixIn,TCPServer):
     pass
 
