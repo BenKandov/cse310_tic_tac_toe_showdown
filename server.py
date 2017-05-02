@@ -181,6 +181,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                             player_name = username
                             logged_in = True
                             in_lobby = True
+                            
                         else:
                             self.request.sendall(name_taken.encode())
                     else:
