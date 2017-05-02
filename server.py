@@ -1,4 +1,6 @@
-from socket import *
+
+from socketserver import *
+from threading import *
 
 class Player:
     def __init__(self, player_name):
@@ -54,12 +56,13 @@ def exit(player_name):
 
 def login(player_name):
     global player_list
-    if search_for_player_name(player_name) is not None:
+    if search_for_player_name(player_name) is None:
         player = Player(player_name)
         player_list.append(player)
+        return True
     else:
         # send this message to client
-        print("Error: This player name is already in use")
+        return False
 
 
 def who_command(player_name):
@@ -149,6 +152,37 @@ elif check_win_conditions() == 1:
 
 
 
+#PROTOCOL CONSTANTS
 
+bad_format = "400 ERROR\nMALFORMED MESSAGE\r\n"
+name_taken = "400 ERROR\n Username is already taken\r\n"
+success = "200 OK\n SUCCESS\r\n"
+#PROTOCOL CONSTANTS
+
+class ThreadedTCPCommunicationHandler(BaseRequestHandler):
+    def handle(self):
+        while(1):
+            self.data = self.request.recv(1024)
+            string_message = self.data.decode("utf-8")
+            if 'LOGIN' in string_message:
+                return_str = string_message.split("LOGIN")[1]
+                if '\r\n' in return_str:
+                    username = string_message.split("\r\n")[0]
+                    if login(username):
+                        self.request.sendall(success.encode())
+                    else:
+                        self.request.sendall(name_taken.encode())
+                else:
+                    self.request.sendall(bad_format.encode())
+            else:
+                self.request.sendall(bad_format.encode())
+class ThreadedTCPServer(ThreadingMixIn,TCPServer):
+    pass
+
+if __name__ == "__main__":
+    HOST = "localhost"
+    PORT = 1234
+    server = ThreadedTCPServer((HOST, PORT), ThreadedTCPCommunicationHandler)
+    server.serve_forever()
 
 
