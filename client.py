@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
                     if len(parse_list) > 1:
                         # if a command takes args, then the functions now have access to them
-                        exec_args['c_args'] = list(filter(lambda x: x != ''. parse_list[1].split(' ')))
+                        exec_args['c_args'] = list(filter(lambda x: x != '', parse_list[1].split(' ')))
 
                     if exec_func not in commands:
                         print('Not a valid command')
