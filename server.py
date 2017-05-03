@@ -1,11 +1,12 @@
-
 from socketserver import *
 from threading import *
 
+
 class Player:
-    def __init__(self, player_name):
+    def __init__(self, player_name, fd):
         self.aval = True
         self.player_name = player_name
+        self.fd = fd
 
     def set_aval(self, boo):
         self.aval = boo
@@ -32,10 +33,14 @@ board_array = [['. ' for x in range(3)] for y in range(3)]
 player_list = []
 games_list = []
 
+
 def start_game():
     pass
+
+
 def end_game():
     pass
+
 
 def search_for_player_name(player_name):
     global player_list
@@ -54,10 +59,10 @@ def exit(player_name):
         print("Error: This player is not currently logged in")
 
 
-def login(player_name):
+def login(player_name, fd):
     global player_list
     if search_for_player_name(player_name) is None:
-        player = Player(player_name)
+        player = Player(player_name, fd)
         player_list.append(player)
         return True
     else:
@@ -71,10 +76,10 @@ def who_command(player_name):
         if player.player_name != player_name:
             print(player.player_name)
 
+
 # variables for keeping track of game state
 
 board_array = [['. ' for x in range(3)] for y in range(3)]
-
 
 
 def print_board():
@@ -150,9 +155,7 @@ if check_win_conditions() == 2:
 elif check_win_conditions() == 1:
     print("X player wins!")
 
-
-
-#PROTOCOL CONSTANTS
+# PROTOCOL CONSTANTS
 
 bad_format = "400 ERROR\nMALFORMED MESSAGE\r\n"
 name_taken = "400 ERROR\nUsername is already taken\r\n"
@@ -163,17 +166,26 @@ carriage = "\r\n"
 newline = '\n'
 player_one_intro = 'Player X is: '
 player_two_intro = 'Player O is: '
-#PROTOCOL CONSTANTS
+invalid_player_name = "400 ERROR\nTHIS PLAYER IS NOT LOGGED IN"
+busy_player_name = "400 ERROR\nTHIS PLAYER IS BUSY"
+game_starting = "200 YALP\nYou have entered into a game with "
+icon_assignment = "200 ICON\nYour icon will be "
+o_icon = "O and you will move second."
+x_icon = "X and you will move first."
+
+
+# PROTOCOL CONSTANTS
 
 class ThreadedTCPCommunicationHandler(BaseRequestHandler):
-
     def handle(self):
         global player_list
         global games_list
+        global game_counter
         player_name = ""
         logged_in = False
         in_lobby = False
-        while(1):
+        in_game = False
+        while 1:
             if not logged_in:
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
@@ -181,12 +193,11 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                     return_str = string_message.split("LOGIN ")[1]
                     if '\r\n' in return_str:
                         username = return_str.split("\r\n")[0]
-                        if login(username):
+                        if login(username, self.request):
                             self.request.sendall(success.encode())
                             player_name = username
                             logged_in = True
                             in_lobby = True
-
                         else:
                             self.request.sendall(name_taken.encode())
                     else:
@@ -207,9 +218,40 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(carriage.encode())
                     else:
                         self.request.sendall(bad_format.encode())
-                elif "PLAY" in string_message:
-                    pass
-                elif "GAMES" in string_message:
+                elif "PLAY " in string_message:
+                    return_str = string_message.split("PLAY ")[1]
+                    if '\r\n' in return_str:
+                        username = return_str.split("\r\n")[0]
+                        if search_for_player_name(username) is not None:
+                            player = search_for_player_name(username)
+                            if player.aval:
+                                new_game = Game(game_counter, search_for_player_name(player_name), player)
+                                games_list.append(new_game)
+                                search_for_player_name(player_name).set_aval(False)
+                                self.request.sendall(game_starting.encode())
+                                self.request.sendall(username.encode())
+                                self.request.sendall(newline.encode())
+                                self.request.sendall(icon_assignment.encode())
+                                self.request.sendall(x_icon.encode())
+                                self.request.sendall(carriage.encode())
+                                player.set_aval(False)
+                                player.fd.sendall(game_starting.encode())
+                                player.fd.sendall(player_name.encode())
+                                player.fd.sendall(newline.encode())
+                                player.fd.sendall(icon_assignment.encode())
+                                player.fd.sendall(o_icon.encode())
+                                player.fd.sendall(carriage.encode())
+                                game_counter += 1
+                                in_game = True
+                                in_lobby = False
+                            else:
+                                self.request.sendall(busy_player_name.encode())
+                        else:
+                            self.request.sendall(invalid_player_name.encode())
+                    else:
+                        self.request.sendall(bad_format.encode())
+
+                elif "GAMES" in string_message :
                     return_str = string_message.split("GAMES")[1]
                     if '\r\n' in return_str:
                         self.request.sendall(games_success.encode())
@@ -225,15 +267,18 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                 else:
                     self.request.sendall(bad_format.encode())
 
+            elif in_game or (
+                        search_for_player_name(player_name) is not None and search_for_player_name(
+                        player_name).aval == False):
+                pass
 
 
-class ThreadedTCPServer(ThreadingMixIn,TCPServer):
+class ThreadedTCPServer(ThreadingMixIn, TCPServer):
     pass
+
 
 if __name__ == "__main__":
     HOST = "localhost"
     PORT = 1234
     server = ThreadedTCPServer((HOST, PORT), ThreadedTCPCommunicationHandler)
     server.serve_forever()
-
-
