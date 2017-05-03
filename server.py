@@ -19,12 +19,13 @@ class Game:
     def __init__(self, game_id, player_x, player_o):
         self.game_id = game_id
         self.player_x = player_x
-        player_x.set_tic("X ")
+        player_x.set_tic("X")
         self.player_o = player_o
-        player_o.set_tic("O ")
+        player_o.set_tic("O")
         self.turn = player_x
-        self.board_array = [['. ' for x in range(3)] for y in range(3)]
-
+        self.board_array = []
+        for y in range(3):
+            self.board_array.append(['.' for i in range(3)])
 
 
 # ids will be generated from this incrementing game_counter
@@ -106,13 +107,14 @@ def move_on_board(board_array, n: int, tac: str):
             diff -= 3
             row += 1
         n = diff
+    if board_array[row-1][n-1] != '.':
+        return False
     board_array[row - 1][n - 1] = tac
     return True
 
 
 # returns 1 for player X and 2 for player O, 0 for neither
 def check_win_conditions(board_array):
-
     # check left diagonal win
     if (board_array[0][0] == board_array[1][1]) and \
             (board_array[1][1] == board_array[2][2]):
@@ -148,8 +150,6 @@ def check_win_conditions(board_array):
     return 0
 
 
-
-
 # PROTOCOL CONSTANTS
 
 bad_format = "400 ERROR\nMALFORMED MESSAGE\r\n"
@@ -169,10 +169,13 @@ o_icon = "O and you will move second."
 x_icon = "X and you will move first."
 invalid_move = "400 ERROR\nINVALID MOVE\r\n"
 wrong_turn = "400 ERROR\nNOT YOUR TURN\r\n"
-good_move = "200 OK\n"
+good_move = "200 ECALP\n"
+good_opponent_move = "200 OECALP\n"
 x = 'X'
 o = 'O'
 dot = '.'
+
+
 # PROTOCOL CONSTANTS
 
 class ThreadedTCPCommunicationHandler(BaseRequestHandler):
@@ -184,7 +187,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
         logged_in = False
         in_lobby = False
         in_game = False
-        current_game = None;
+        current_game = None
         while 1:
             if not logged_in:
                 self.data = self.request.recv(1024)
@@ -204,7 +207,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(bad_format.encode())
                 else:
                     self.request.sendall(bad_format.encode())
-            elif in_lobby:
+            elif in_lobby and search_for_player_name(player_name).aval:
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
                 if "WHO" in string_message:
@@ -272,9 +275,16 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
             elif in_game or (
                             search_for_player_name(player_name) is not None and search_for_player_name(
                         player_name).aval is False):
+                if current_game is None:
+                    in_game = True
+                    in_lobby = False
+                    for game in games_list:
+                        if game.player_o == search_for_player_name(player_name):
+                            current_game = game
+                            break
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
-                in_game = True
+
                 if "PLACE " in string_message:
                     return_str = string_message.split("PLACE")[1]
                     if current_game.turn is not search_for_player_name(player_name):
@@ -282,8 +292,30 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                     elif "\r\n" in return_str:
                         n = return_str.split("\r\n")[0]
                         if move_on_board(current_game.board_array, int(n), search_for_player_name(player_name).tic):
-
                             self.request.sendall(good_move.encode())
+                            for row in current_game.board_array:
+                                for item in row:
+                                    self.request.sendall(item.encode())
+                                self.request.sendall(newline.encode())
+                            self.request.sendall(carriage.encode())
+                            if current_game.turn is current_game.player_x:
+                                current_game.player_o.fd.sendall(good_opponent_move.encode())
+                                for row in current_game.board_array:
+                                    for item in row:
+                                        current_game.player_o.fd.sendall(item.encode())
+                                    current_game.player_o.fd.sendall(newline.encode())
+                                current_game.player_o.fd.sendall(carriage.encode())
+                                current_game.turn = current_game.player_o
+                            else:
+                                current_game.player_x.fd.sendall(good_opponent_move.encode())
+                                for row in current_game.board_array:
+                                    for item in row:
+                                        current_game.player_x.fd.sendall(item.encode())
+                                    current_game.player_x.fd.sendall(newline.encode())
+                                current_game.player_x.fd.sendall(carriage.encode())
+                                current_game.turn = current_game.player_x
+                            # check win conditions and end game if necessary
+                            check_win_conditions(current_game.board_array)
                         else:
                             self.request.sendall(invalid_move.encode())
                     else:
