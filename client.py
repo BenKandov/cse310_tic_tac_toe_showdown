@@ -20,7 +20,7 @@ def login(exec_args):
         exec_args['socket'].send(protocol_cmd.encode())
 
 def place(exec_args):
-    if not len(exec_args['c_args']) < 1:
+    if len(exec_args['c_args']) < 1:
         print('Please specify which cell you like to make your move in')
     else:
         cell = exec_args['c_args'][0]
@@ -37,13 +37,14 @@ def exit_game(exec_args):
 
 def games(exec_args):
     protocol_cmd = 'GAMES\r\n'
+    exec_args['socket'].send(protocol_cmd.encode())
 
 def who(exec_args):
     protocol_cmd = 'WHO\r\n'
     exec_args['socket'].send(protocol_cmd.encode())
 
 def play(exec_args):
-    if not len(exec_args['c_args']) < 1:
+    if len(exec_args['c_args']) < 1:
         print('Specify who you would like to play as')
     else:
         opponent = exec_args['c_args'][0]
@@ -52,12 +53,13 @@ def play(exec_args):
 
 def handle_msg(msg):
     # msg is an array of string
-    if msg[0] == '200 OHW':
+    print('this is what is sent: ' + msg[0])
+    if msg[0] == '200 OHW\n':
         print('These players are on right now:')
         to_print = msg[1].split(',')
         for x in to_print:
             print(x)
-    elif msg[0] == '200 SEMAG':
+    elif msg[0] == '200 SEMAG\n':
         print('These are the current games:')
         to_print = msg[1].split(',')
         for x in to_print:

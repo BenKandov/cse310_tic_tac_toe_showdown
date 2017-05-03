@@ -155,10 +155,11 @@ def check_win_conditions(board_array):
 bad_format = "400 ERROR\nMALFORMED MESSAGE\r\n"
 name_taken = "400 ERROR\nUsername is already taken\r\n"
 success = "200 OK\nSUCCESS\r\n"
-who_success = "200 OWH\nSUCCESS\r\n "
-games_success = "200 SEMAG\nSUCCESS\r\n "
+who_success = "200 OHW\n"
+games_success = "200 SEMAG\n"
 carriage = "\r\n"
 newline = '\n'
+comma = ','
 player_one_intro = 'Player X is: '
 player_two_intro = 'Player O is: '
 invalid_player_name = "400 ERROR\nTHIS PLAYER IS NOT LOGGED IN\r\n"
@@ -215,12 +216,14 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                 if "WHO" in string_message:
                     return_str = string_message.split("WHO")[1]
                     if '\r\n' in return_str:
+                        ret = ""
                         self.request.sendall(who_success.encode())
                         for player in player_list:
                             if player.player_name != player_name:
-                                self.request.sendall(player.player_name.encode())
-                                self.request.sendall(newline.encode())
-                        self.request.sendall(carriage.encode())
+                                ret += player.player_name
+                                ret += comma
+                        ret += carriage
+                        self.request.sendall(ret.encode())
                     else:
                         self.request.sendall(bad_format.encode())
                 elif "PLAY " in string_message:
@@ -265,10 +268,10 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(games_success.encode())
                         for game in games_list:
                             self.request.sendall(player_one_intro.encode())
-                            self.request.sendall(game.player_x.encode())
+                            self.request.sendall(game.player_x.player_name.encode())
                             self.request.sendall(player_two_intro.encode())
-                            self.request.sendall(game.player_o.encode())
-                            self.request.sendall(newline.encode())
+                            self.request.sendall(game.player_o.player_name.encode())
+                            self.request.sendall(comma.encode())
                         self.request.sendall(carriage.encode())
                     else:
                         self.request.sendall(bad_format.encode())
@@ -298,14 +301,14 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                             for row in current_game.board_array:
                                 for item in row:
                                     self.request.sendall(item.encode())
-                                self.request.sendall(newline.encode())
+                                self.request.sendall(comma.encode())
                             self.request.sendall(carriage.encode())
                             if current_game.turn is current_game.player_x:
                                 current_game.player_o.fd.sendall(good_opponent_move.encode())
                                 for row in current_game.board_array:
                                     for item in row:
                                         current_game.player_o.fd.sendall(item.encode())
-                                    current_game.player_o.fd.sendall(newline.encode())
+                                    current_game.player_o.fd.sendall(comma.encode())
                                 current_game.player_o.fd.sendall(carriage.encode())
                                 current_game.turn = current_game.player_o
                             else:
@@ -313,7 +316,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 for row in current_game.board_array:
                                     for item in row:
                                         current_game.player_x.fd.sendall(item.encode())
-                                    current_game.player_x.fd.sendall(newline.encode())
+                                    current_game.player_x.fd.sendall(comma.encode())
                                 current_game.player_x.fd.sendall(carriage.encode())
                                 current_game.turn = current_game.player_x
                             # check win conditions and end game if necessary
