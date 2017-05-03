@@ -22,6 +22,9 @@ class Game:
         player_x.set_tic("X ")
         self.player_o = player_o
         player_o.set_tic("O ")
+        self.turn = player_x
+        self.board_array = [['. ' for x in range(3)] for y in range(3)]
+
 
 
 # ids will be generated from this incrementing game_counter
@@ -29,7 +32,7 @@ game_counter = 0
 
 # variables for keeping track of game state
 
-board_array = [['. ' for x in range(3)] for y in range(3)]
+
 player_list = []
 games_list = []
 
@@ -79,11 +82,10 @@ def who_command(player_name):
 
 # variables for keeping track of game state
 
-board_array = [['. ' for x in range(3)] for y in range(3)]
 
 
-def print_board():
-    global board_array
+
+def print_board(board_array):
     for row in board_array:
         for item in row:
             print(item, end='')
@@ -93,8 +95,9 @@ def print_board():
 # invalid moves should be checked before calling this method
 # perhaps later check if spot has already been taken and return error to client
 # definitely check whose turn it is and return error if applicable
-def move_on_board(n: int, tac: str):
-    global board_array
+def move_on_board(board_array, n: int, tac: str):
+    if n < 1 or n > 9:
+        return False
     row = 1
     if n > 3:
         diff = n - 3
@@ -104,11 +107,11 @@ def move_on_board(n: int, tac: str):
             row += 1
         n = diff
     board_array[row - 1][n - 1] = tac
+    return True
 
 
 # returns 1 for player X and 2 for player O, 0 for neither
-def check_win_conditions():
-    global board_array
+def check_win_conditions(board_array):
 
     # check left diagonal win
     if (board_array[0][0] == board_array[1][1]) and \
@@ -145,15 +148,7 @@ def check_win_conditions():
     return 0
 
 
-move_on_board(3, '0 ')
-move_on_board(5, '0 ')
-move_on_board(7, '0 ')
 
-print_board()
-if check_win_conditions() == 2:
-    print("O player wins!")
-elif check_win_conditions() == 1:
-    print("X player wins!")
 
 # PROTOCOL CONSTANTS
 
@@ -166,14 +161,18 @@ carriage = "\r\n"
 newline = '\n'
 player_one_intro = 'Player X is: '
 player_two_intro = 'Player O is: '
-invalid_player_name = "400 ERROR\nTHIS PLAYER IS NOT LOGGED IN"
-busy_player_name = "400 ERROR\nTHIS PLAYER IS BUSY"
+invalid_player_name = "400 ERROR\nTHIS PLAYER IS NOT LOGGED IN\r\n"
+busy_player_name = "400 ERROR\nTHIS PLAYER IS BUSY\r\n"
 game_starting = "200 YALP\nYou have entered into a game with "
 icon_assignment = "200 ICON\nYour icon will be "
 o_icon = "O and you will move second."
 x_icon = "X and you will move first."
-
-
+invalid_move = "400 ERROR\nINVALID MOVE\r\n"
+wrong_turn = "400 ERROR\nNOT YOUR TURN\r\n"
+good_move = "200 OK\n"
+x = 'X'
+o = 'O'
+dot = '.'
 # PROTOCOL CONSTANTS
 
 class ThreadedTCPCommunicationHandler(BaseRequestHandler):
@@ -185,6 +184,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
         logged_in = False
         in_lobby = False
         in_game = False
+        current_game = None;
         while 1:
             if not logged_in:
                 self.data = self.request.recv(1024)
@@ -228,6 +228,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 new_game = Game(game_counter, search_for_player_name(player_name), player)
                                 games_list.append(new_game)
                                 search_for_player_name(player_name).set_aval(False)
+                                search_for_player_name(player_name).set_tic('X')
                                 self.request.sendall(game_starting.encode())
                                 self.request.sendall(username.encode())
                                 self.request.sendall(newline.encode())
@@ -235,6 +236,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 self.request.sendall(x_icon.encode())
                                 self.request.sendall(carriage.encode())
                                 player.set_aval(False)
+                                player.set_tic('O')
                                 player.fd.sendall(game_starting.encode())
                                 player.fd.sendall(player_name.encode())
                                 player.fd.sendall(newline.encode())
@@ -244,6 +246,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 game_counter += 1
                                 in_game = True
                                 in_lobby = False
+                                current_game = new_game
                             else:
                                 self.request.sendall(busy_player_name.encode())
                         else:
@@ -251,7 +254,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                     else:
                         self.request.sendall(bad_format.encode())
 
-                elif "GAMES" in string_message :
+                elif "GAMES" in string_message:
                     return_str = string_message.split("GAMES")[1]
                     if '\r\n' in return_str:
                         self.request.sendall(games_success.encode())
@@ -266,11 +269,28 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(bad_format.encode())
                 else:
                     self.request.sendall(bad_format.encode())
-
             elif in_game or (
-                        search_for_player_name(player_name) is not None and search_for_player_name(
-                        player_name).aval == False):
-                pass
+                            search_for_player_name(player_name) is not None and search_for_player_name(
+                        player_name).aval is False):
+                self.data = self.request.recv(1024)
+                string_message = self.data.decode("utf-8")
+                in_game = True
+                if "PLACE " in string_message:
+                    return_str = string_message.split("PLACE")[1]
+                    if current_game.turn is not search_for_player_name(player_name):
+                        self.request.sendall(wrong_turn.encode())
+                    elif "\r\n" in return_str:
+                        n = return_str.split("\r\n")[0]
+                        if move_on_board(current_game.board_array, int(n), search_for_player_name(player_name).tic):
+
+                            self.request.sendall(good_move.encode())
+                        else:
+                            self.request.sendall(invalid_move.encode())
+                    else:
+                        self.request.sendall(bad_format.encode())
+
+                else:
+                    self.request.sendall(bad_format.encode())
 
 
 class ThreadedTCPServer(ThreadingMixIn, TCPServer):
