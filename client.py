@@ -88,7 +88,8 @@ if __name__ == '__main__':
         # this is what select chooses from
         read_list = [ stdin, client_soc ]
 
-        if argv[3]:
+       # if argv[3]:
+        if False:
             # if the being run with the automatch flag, then send a quick AUTOMATCH req
             client_soc.send('AUTOLOGIN\r\n'.encode())
         else:

@@ -210,6 +210,8 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
             elif in_lobby and search_for_player_name(player_name).aval:
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
+                if not search_for_player_name(player_name).aval:
+                    continue
                 if "WHO" in string_message:
                     return_str = string_message.split("WHO")[1]
                     if '\r\n' in return_str:
