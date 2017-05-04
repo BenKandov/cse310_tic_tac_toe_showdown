@@ -2,7 +2,6 @@ from sys import argv, stdin
 from socket import *
 import select
 
-
 # boolean for exiting; start as True
 running = True
 
@@ -64,6 +63,16 @@ def handle_msg(msg):
         to_print = msg[1].split(',')
         for x in to_print:
             print(x)
+    elif msg[0] == '200 ECALP\n':
+        print('You played a move: ')
+        to_print = msg[1].split(',')
+        for x in to_print:
+            print(x)
+    elif msg[0] == "200 OECALP\n":
+        print('The opponent has made his/her move: ')
+        to_print = msg[1].split(',')
+        for x in to_print:
+            print(x)
     else:
         print(msg[1])
 
@@ -90,8 +99,7 @@ if __name__ == '__main__':
         # this is what select chooses from
         read_list = [ stdin, client_soc ]
 
-       # if argv[3]:
-        if False:
+        if len(argv) > 3:
             # if the being run with the automatch flag, then send a quick AUTOMATCH req
             client_soc.send('AUTOLOGIN\r\n'.encode())
         else:
