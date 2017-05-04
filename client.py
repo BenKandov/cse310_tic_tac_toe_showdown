@@ -76,7 +76,7 @@ def handle_msg(msg, client_soc):
         # send ENTER
         client_soc.send('ENTER'.encode())
         client_soc.recv(1024)
-    elif  len(msg) > 3 and 'Enter' in msg[2]:
+    elif  msg[0] == '200 OYALP':
         # send ENTER
         client_soc.send('ENTER'.encode())
         client_soc.recv(1024)
