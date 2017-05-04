@@ -181,8 +181,9 @@ player_two_intro = 'Player O is: '
 invalid_player_name = "400 ERROR\nTHIS PLAYER IS NOT LOGGED IN\r\n"
 busy_player_name = "400 ERROR\nTHIS PLAYER IS BUSY\r\n"
 game_starting = "200 YALP\nYou have entered into a game with "
+game_starting_o = "200 OYALP\nYou have entered into a game with "
 icon_assignment = "Your icon will be "
-o_icon = "O and you will move second.\n Press Enter to continue"
+o_icon = "O and you will move second."
 x_icon = "X and you will move first."
 invalid_move = "400 ERROR\nINVALID MOVE\r\n"
 wrong_turn = "400 ERROR\nNOT YOUR TURN\r\n"
@@ -194,7 +195,7 @@ you_won = "200 WON\nYou win.\nPlease press Enter to continue\n"
 you_lost = "200 LOSE\n"
 dot = '.'
 exit_success = '200 TIXE\nSuccesful exit\r\n'
-opponent_exited = '200 OTIXE\nYour opponenet just exited.\nPlease press Enter to continue\r\n'
+opponent_exited = '200 OTIXE\nYour opponenet just exited.\r\n'
 
 # PROTOCOL CONSTANTS
 
@@ -289,7 +290,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 ret = ""
                                 player.set_aval(False)
                                 player.set_tic('O')
-                                ret += game_starting + player_name + newline + icon_assignment + o_icon + carriage
+                                ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
                                 player.fd.sendall(ret.encode())
                                 game_counter += 1
                                 current_game = new_game
