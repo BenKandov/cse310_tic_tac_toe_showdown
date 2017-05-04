@@ -52,7 +52,6 @@ def play(exec_args):
 
 def handle_msg(msg):
     # msg is an array of string
-    print('this is what is sent: ' + msg[0])
     if msg[0] == '200 OHW\n':
         print('These players are on right now:')
         to_print = msg[1].split(',')
