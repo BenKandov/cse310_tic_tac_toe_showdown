@@ -1,4 +1,5 @@
 from socketserver import *
+import queue
 from threading import *
 
 
@@ -7,6 +8,9 @@ class Player:
         self.aval = True
         self.player_name = player_name
         self.fd = fd
+
+    def set_auto(self):
+        self.auto = True
 
     def set_aval(self, boo):
         self.aval = boo
@@ -36,6 +40,7 @@ game_counter = 0
 
 player_list = []
 games_list = []
+auto_player_queue = queue()
 
 
 def start_game():
@@ -72,6 +77,16 @@ def login(player_name, fd):
     else:
         # send this message to client
         return False
+
+def auto_login(player_name, fd):
+    global auto_player_queue
+    if search_for_player_name(player_name) is None:
+        player = Player(player_name, fd)
+        player.set_auto()
+        auto_player_queue.append(player)
+        player_list.append(player)
+        return True
+    return False
 
 
 def who_command(player_name):
@@ -192,12 +207,37 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
         in_lobby = False
         in_game = False
         current_game = None
+        auto_login = False
         while 1:
+
+            if auto_login and search_for_player_name(player_name).aval is True:
+
+
+                continue
+            elif auto_player_queue and search_for_player_name(player_name) is False:
+
+                continue
             #LOGIN STATE
             if not logged_in:
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
-                if 'LOGIN ' in string_message:
+                if 'AUTOLOGIN' in string_message:
+                    return_str = string_message.split("AUTOLOGIN ")[1]
+                    if '\r\n' in return_str:
+                        username = return_str.split("\r\n")[0]
+                        if auto_login(username, self.request):
+                            self.request.sendall(success.encode())
+                            player_name = username
+                            logged_in = True
+                            in_lobby = True
+                            auto_login = True
+                        else:
+                            self.request.sendall(name_taken.encode())
+                    else:
+                        self.request.sendall(bad_format.encode())
+
+
+                elif 'LOGIN ' in string_message:
                     return_str = string_message.split("LOGIN ")[1]
                     if '\r\n' in return_str:
                         username = return_str.split("\r\n")[0]
@@ -222,9 +262,9 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                     return_str = string_message.split("WHO")[1]
                     if '\r\n' in return_str:
                         ret = ""
-                        self.request.sendall(who_success.encode())
+                        ret += who_success
                         for player in player_list:
-                            if player.player_name != player_name:
+                            if player.player_name != player_name and player.aval is True and player.auto is None:
                                 ret += player.player_name
                                 ret += comma
                         ret += carriage
