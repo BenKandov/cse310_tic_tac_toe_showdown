@@ -50,28 +50,41 @@ def play(exec_args):
         protocol_cmd = 'PLAY %s\r\n' % (opponent,)
         exec_args['socket'].send(protocol_cmd.encode())
 
-def handle_msg(msg):
+def handle_msg(msg, client_soc):
     # msg is an array of string
-    if msg[0] == '200 OHW\n':
+    if msg[0] == '200 OHW':
         print('These players are on right now:')
         to_print = msg[1].split(',')
         for x in to_print:
             print(x)
-    elif msg[0] == '200 SEMAG\n':
+    elif msg[0] == '200 SEMAG':
         print('These are the current games:')
         to_print = msg[1].split(',')
         for x in to_print:
             print(x)
-    elif msg[0] == '200 ECALP\n':
+    elif msg[0] == '200 ECALP':
         print('You played a move: ')
         to_print = msg[1].split(',')
         for x in to_print:
             print(x)
-    elif msg[0] == "200 OECALP\n":
+    elif msg[0] == "200 OECALP":
         print('The opponent has made his/her move: ')
         to_print = msg[1].split(',')
         for x in to_print:
             print(x)
+    elif msg[0] == "200 WON":
+        # send ENTER
+        client_soc.send('ENTER'.encode())
+        client_soc.recv(1024)
+    elif  len(msg) > 3 and 'Enter' in msg[2]:
+        # send ENTER
+        client_soc.send('ENTER'.encode())
+        client_soc.recv(1024)
+    elif msg[0] == "200 OTIXE":
+        print(msg[1])
+        # send ENTER
+        client_soc.send('ENTER'.encode())
+        client_soc.recv(1024)
     else:
         print(msg[1])
 
@@ -133,4 +146,6 @@ if __name__ == '__main__':
                     # you can read from the socket 
                     message = client_soc.recv(1024).decode()
                     message = message.split('\n')
-                    handle_msg(message)
+                    # debug statements
+                    print('DEBUG - ' + ''.join(message))
+                    handle_msg(message, client_soc)

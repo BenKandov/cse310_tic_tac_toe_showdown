@@ -40,7 +40,7 @@ game_counter = 0
 
 player_list = []
 games_list = []
-auto_player_queue = queue()
+#auto_player_queue = queue()
 
 
 def start_game():
@@ -214,9 +214,9 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
 
 
                 continue
-            elif auto_player_queue and search_for_player_name(player_name) is False:
+            #elif auto_player_queue and search_for_player_name(player_name) is False:
 
-                continue
+                #continue
             #LOGIN STATE
             if not logged_in:
                 self.data = self.request.recv(1024)
@@ -264,7 +264,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         ret = ""
                         ret += who_success
                         for player in player_list:
-                            if player.player_name != player_name and player.aval is True and player.auto is None:
+                            if player.player_name != player_name and player.aval is True: #player.auto is None:
                                 ret += player.player_name
                                 ret += comma
                         ret += carriage
@@ -302,7 +302,8 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                 elif "GAMES" in string_message:
                     return_str = string_message.split("GAMES")[1]
                     if '\r\n' in return_str:
-                        self.request.sendall(games_success.encode())
+                        ret = ''
+                        ret += games_success
                         for game in games_list:
                             ret = ""
                             ret += player_one_intro + game.player_x.player_name + player_two_intro + game.player_o.player_name + comma
