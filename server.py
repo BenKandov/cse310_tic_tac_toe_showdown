@@ -120,14 +120,14 @@ def check_win_conditions(board_array):
             (board_array[1][1] == board_array[2][2]):
         if "X" in board_array[0][0]:
             return 2
-        else:
+        elif "O" in board_array[0][0]:
             return 1
     # check right diagonal win
     if (board_array[0][2] == board_array[1][1]) and \
             (board_array[1][1] == board_array[2][0]):
         if "X" in board_array[0][2]:
             return 2
-        else:
+        elif "O" in board_array[0][2]:
             return 1
 
     # check for row wins
@@ -166,7 +166,7 @@ invalid_player_name = "400 ERROR\nTHIS PLAYER IS NOT LOGGED IN\r\n"
 busy_player_name = "400 ERROR\nTHIS PLAYER IS BUSY\r\n"
 game_starting = "200 YALP\nYou have entered into a game with "
 icon_assignment = "200 ICON\nYour icon will be "
-o_icon = "O and you will move second."
+o_icon = "O and you will move second. Press Enter to continue"
 x_icon = "X and you will move first."
 invalid_move = "400 ERROR\nINVALID MOVE\r\n"
 wrong_turn = "400 ERROR\nNOT YOUR TURN\r\n"
@@ -174,10 +174,11 @@ good_move = "200 ECALP\n"
 good_opponent_move = "200 OECALP\n"
 x = 'X'
 o = 'O'
-you_won = "200 WON\r\n"
-you_lost = "200 LOSE\r\n"
+you_won = "200 WON\nYou win. Please press enter to continue"
+you_lost = "200 LOSE\n"
 dot = '.'
-
+exit_success = '200 OK\nSuccesful exit\r\n'
+opponent_exited = '200 OK\nYour opponenet just exited'
 
 # PROTOCOL CONSTANTS
 
@@ -192,6 +193,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
         in_game = False
         current_game = None
         while 1:
+            #LOGIN STATE
             if not logged_in:
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
@@ -210,6 +212,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(bad_format.encode())
                 else:
                     self.request.sendall(bad_format.encode())
+            #IN LOBBY
             elif in_lobby and search_for_player_name(player_name).aval:
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
@@ -267,18 +270,24 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(ret.encode())
                     else:
                         self.request.sendall(bad_format.encode())
+                elif "EXIT" in string_message:
+                    return_str = string_message.split("EXIT")[1]
+                    if '\r\n' in return_str:
+                        self.request.sendall(exit_success.encode())
+                        player_list.remove(search_for_player_name(player_name))
+                        break
+                    else:
+                        self.request.sendall(bad_format.encode())
                 else:
                     self.request.sendall(bad_format.encode())
+            #GAME STATE
             elif search_for_player_name(player_name) is not None and search_for_player_name(
                         player_name).aval is False:
                 if current_game is None:
-                    in_game = True
-                    in_lobby = False
                     for game in games_list:
                         if game.player_o == search_for_player_name(player_name):
                             current_game = game
                             break
-                in_game = True
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
 
@@ -325,7 +334,6 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 current_game.player_o.aval = True
                                 games_list.remove(current_game)
 
-
                             elif check_win_conditions(current_game.board_array) == 2:
                                 current_game.player_o.fd.sendall(you_won.encode())
                                 current_game.player_x.aval = True
@@ -338,6 +346,21 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                     else:
                         self.request.sendall(bad_format.encode())
 
+                elif "EXIT" in string_message:
+                    return_str = string_message.split("EXIT")[1]
+                    if '\r\n' in return_str:
+                        self.request.sendall(exit_success.encode())
+                        if search_for_player_name(player_name) is current_game.player_x:
+                            current_game.player_o.fd.sendall(opponent_exited.encode())
+                            current_game.player_o.aval = True
+                        else:
+                            current_game.player_x.fd.sendall(opponent_exited.encode())
+                            current_game.player_x.aval = True
+                        player_list.remove(search_for_player_name(player_name))
+                        games_list.remove(current_game)
+                        break
+                    else:
+                        self.request.sendall(bad_format.encode())
                 else:
                     self.request.sendall(bad_format.encode())
 
