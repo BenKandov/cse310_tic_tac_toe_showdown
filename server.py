@@ -8,6 +8,7 @@ class Player:
         self.aval = True
         self.player_name = player_name
         self.fd = fd
+        self.auto = False
 
     def set_auto(self):
         self.auto = True
@@ -180,8 +181,8 @@ player_two_intro = 'Player O is: '
 invalid_player_name = "400 ERROR\nTHIS PLAYER IS NOT LOGGED IN\r\n"
 busy_player_name = "400 ERROR\nTHIS PLAYER IS BUSY\r\n"
 game_starting = "200 YALP\nYou have entered into a game with "
-icon_assignment = "200 ICON\nYour icon will be "
-o_icon = "O and you will move second. Press Enter to continue"
+icon_assignment = "Your icon will be "
+o_icon = "O and you will move second.\n Press Enter to continue"
 x_icon = "X and you will move first."
 invalid_move = "400 ERROR\nINVALID MOVE\r\n"
 wrong_turn = "400 ERROR\nNOT YOUR TURN\r\n"
@@ -189,11 +190,11 @@ good_move = "200 ECALP\n"
 good_opponent_move = "200 OECALP\n"
 x = 'X'
 o = 'O'
-you_won = "200 WON\nYou win. Please press enter to continue"
+you_won = "200 WON\nYou win.\nPlease press Enter to continue\n"
 you_lost = "200 LOSE\n"
 dot = '.'
-exit_success = '200 OK\nSuccesful exit\r\n'
-opponent_exited = '200 OK\nYour opponenet just exited'
+exit_success = '200 TIXE\nSuccesful exit\r\n'
+opponent_exited = '200 OTIXE\nYour opponenet just exited.\nPlease press Enter to continue\r\n'
 
 # PROTOCOL CONSTANTS
 
@@ -264,7 +265,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         ret = ""
                         ret += who_success
                         for player in player_list:
-                            if player.player_name != player_name and player.aval is True: #player.auto is None:
+                            if player.player_name != player_name and player.aval is True: #and player.auto is None:
                                 ret += player.player_name
                                 ret += comma
                         ret += carriage
@@ -302,7 +303,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                 elif "GAMES" in string_message:
                     return_str = string_message.split("GAMES")[1]
                     if '\r\n' in return_str:
-                        ret = ''
+                        ret = ""
                         ret += games_success
                         for game in games_list:
                             ret = ""
