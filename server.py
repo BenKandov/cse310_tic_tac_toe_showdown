@@ -314,7 +314,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         username = return_str.split("\r\n")[0]
                         if search_for_player_name(username) is not None:
                             player = search_for_player_name(username)
-                            if player.aval and not player.auto:
+                            if player.aval and not player.auto and player is not search_for_player_name(player_name):
                                 new_game = Game(game_counter, search_for_player_name(player_name), player)
                                 games_list.append(new_game)
                                 search_for_player_name(player_name).set_aval(False)
