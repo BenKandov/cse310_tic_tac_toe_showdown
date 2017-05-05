@@ -77,6 +77,8 @@ def handle_msg(msg, client_soc):
         client_soc.send('ENTER'.encode())
         client_soc.recv(1024)
     elif  msg[0] == '200 OYALP':
+        print(msg[1])
+        print(msg[2])
         # send ENTER
         client_soc.send('ENTER'.encode())
     elif msg[0] == "200 OTIXE":
@@ -84,6 +86,11 @@ def handle_msg(msg, client_soc):
         # send ENTER
         client_soc.send('ENTER'.encode())
         client_soc.recv(1024)
+    elif msg[0] == "200 OTIE":
+        # send ENTER
+        client_soc.send('ENTER'.encode())
+        client_soc.recv(1024)
+        print('The game ended in a tie\n')
     else:
         print(msg[1])
 
@@ -155,6 +162,6 @@ if __name__ == '__main__':
                     # you can read from the socket 
                     message = client_soc.recv(1024).decode()
                     message = message.split('\n')
-                    # debug statements
-                    print('DEBUG - ' + ''.join(message))
+                    # DEBUG statements
+                    print('DEBUG: ' + '-'.join(message))
                     handle_msg(message, client_soc)
