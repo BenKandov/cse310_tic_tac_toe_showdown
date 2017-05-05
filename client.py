@@ -58,10 +58,13 @@ def handle_msg(msg, client_soc):
         for x in to_print:
             print(x)
     elif msg[0] == '200 SEMAG':
-        print('These are the current games:')
-        to_print = msg[1].split(',')
-        for x in to_print:
-            print(x)
+        if msg[1] == '':
+            print('There are no games currently in progress')
+        else: 
+            print('These are the current games:')
+            to_print = msg[1].split(',')
+            for x in to_print:
+                print(x)
     elif msg[0] == '200 ECALP':
         print('You played a move: ')
         to_print = msg[1].split(',')
