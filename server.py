@@ -425,6 +425,15 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 for item in row:
                                     if item == '.':
                                         tie = False
+                            if tie:
+                                self.request.sendall(you_tie.encode())
+                                current_game.player_x.aval = True
+                                current_game.player_o.aval = True
+                                if current_game.player_x is search_for_player_name(player_name):
+                                    current_game.player_o.fd.sendall(opp_tie.encode())
+                                else:
+                                    current_game.player_x.fd.sendall(opp_tie.encode())
+                                games_list.remove(current_game)
                             if check_win_conditions(current_game.board_array) > 0 or tie:
                                 if auto_logged:
                                     auto_player_queue.append(current_game.player_o)
