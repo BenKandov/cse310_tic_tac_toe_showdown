@@ -478,7 +478,6 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
                                 player_2.fd.sendall(ret.encode())
                                 game_counter += 1
-                                current_game = new_game
 
 
                         else:
@@ -489,50 +488,22 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                 elif "EXIT" in string_message:
                     return_str = string_message.split("EXIT")[1]
                     if '\r\n' in return_str:
-                        remaining_player = None
+
                         self.request.sendall(exit_success.encode())
                         if search_for_player_name(player_name) is current_game.player_x:
                             current_game.player_o.fd.sendall(opponent_exited.encode())
                             current_game.player_o.aval = True
-                            remaining_player = current_game.player_o
+                            if auto_logged:
+                                auto_player_queue.append(current_game.player_o)
+
                         else:
                             current_game.player_x.fd.sendall(opponent_exited.encode())
                             current_game.player_x.aval = True
-                            remaining_player = current_game.player_x
+                            if auto_logged:
+                                auto_player_queue.append(current_game.player_x)
+
                         player_list.remove(search_for_player_name(player_name))
                         games_list.remove(current_game)
-                        if auto_logged:
-                            auto_player_queue.append(remaining_player)
-                            remaining_player.aval = True
-                            if not not auto_player_queue:
-                                player_2 = auto_player_queue[0]
-                                if player_2 is remaining_player:
-                                    if len(auto_player_queue) == 1:
-                                        continue
-                                    player_2 = auto_player_queue[1]
-                                auto_player_queue.remove(player_2)
-                                auto_player_queue.remove(remaining_player)
-                            else:
-                                continue
-                            if player_2.aval is False:
-                                continue
-                            # start a game:
-                            player_2.set_aval(False)
-                            player_2.set_tic('O')
-                            remaining_player.set_aval(False)
-                            remaining_player.set_tic('X')
-                            new_game = Game(game_counter, remaining_player, player_2)
-                            games_list.append(new_game)
-                            ret = ""
-                            ret += game_starting + player_2.player_name + newline + icon_assignment + x_icon + carriage
-                            remaining_player.fd.sendall(ret.encode())
-                            ret = ""
-                            ret += game_starting_o + remaining_player.player_name + newline + icon_assignment + o_icon + carriage
-                            player_2.fd.sendall(ret.encode())
-                            game_counter += 1
-                            current_game = new_game
-
-
                         break
                     else:
                         self.request.sendall(bad_format.encode())
