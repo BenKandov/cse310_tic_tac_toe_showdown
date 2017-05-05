@@ -16,6 +16,7 @@ def login(exec_args):
     else:
         username = exec_args['c_args'][0]
         protocol_cmd = 'LOGIN %s\r\n' % (username,)
+        print('SENDING TO SERVER : %s', protocol_cmd)
         exec_args['socket'].send(protocol_cmd.encode())
 
 def place(exec_args):
@@ -24,12 +25,14 @@ def place(exec_args):
     else:
         cell = exec_args['c_args'][0]
         protocol_cmd = 'PLACE %s\r\n' % (cell,)
+        print('SENDING TO SERVER : %s', protocol_cmd)
         exec_args['socket'].send(protocol_cmd.encode())
 
 def exit_game(exec_args):
     global running
 
     protocol_cmd = 'EXIT\r\n'
+    print('SENDING TO SERVER : %s', protocol_cmd)
     exec_args['socket'].send(protocol_cmd.encode())
     exec_args['socket'].close()
     running = False
@@ -48,6 +51,7 @@ def play(exec_args):
     else:
         opponent = exec_args['c_args'][0]
         protocol_cmd = 'PLAY %s\r\n' % (opponent,)
+        print('SENDING TO SERVER : %s', protocol_cmd)
         exec_args['socket'].send(protocol_cmd.encode())
 
 def handle_msg(msg, client_soc):
@@ -79,6 +83,7 @@ def handle_msg(msg, client_soc):
         # send ENTER
         client_soc.send('ENTER'.encode())
         client_soc.recv(1024)
+        print('Good job! You win!')
     elif  msg[0] == '200 OYALP':
         print(msg[1])
         print(msg[2])
@@ -105,6 +110,7 @@ def autologin(exec_args):
     else:
         username = exec_args['c_args'][0]
         protocol_cmd = 'AUTOLOGIN %s\r\n' % (username,)
+        print('SENDING TO SERVER : %s', protocol_cmd)
         exec_args['socket'].send(protocol_cmd.encode())
 
 commands = {
