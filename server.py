@@ -1,6 +1,6 @@
 from socketserver import *
-import queue
-from threading import *
+
+
 
 
 class Player:
@@ -41,7 +41,7 @@ game_counter = 0
 
 player_list = []
 games_list = []
-#auto_player_queue = queue()
+auto_player_queue = []
 
 
 def start_game():
@@ -204,22 +204,31 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
         global player_list
         global games_list
         global game_counter
+        global auto_player_queue
         player_name = ""
         logged_in = False
         in_lobby = False
         in_game = False
         current_game = None
-        auto_login = False
+        auto_logged = False
+
         while 1:
+            # This is where auto-login searches for a partner for you
+            if auto_logged and search_for_player_name(player_name).aval is True:
 
-            if auto_login and search_for_player_name(player_name).aval is True:
+                self.data = self.request.recv(1024)
+                string_message = self.data.decode("utf-8")
+                if "EXIT" in string_message:
+
+                    self.request.sendall(exit_success.encode())
+
+                    player_list.remove(search_for_player_name(player_name))
+                    break
+                else:
+                    pass
 
 
-                continue
-            #elif auto_player_queue and search_for_player_name(player_name) is False:
-
-                #continue
-            #LOGIN STATE
+            # LOGIN STATE
             if not logged_in:
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
@@ -231,13 +240,39 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                             self.request.sendall(success.encode())
                             player_name = username
                             logged_in = True
-                            in_lobby = True
-                            auto_login = True
+                            auto_logged = True
+                            # let's connect top guy in the queue with you
+                            if not not auto_player_queue:
+                                player_2 = auto_player_queue[0]
+                                if player_2 is search_for_player_name(player_name):
+                                    if len(auto_player_queue) == 1:
+                                        continue
+                                    player_2 = auto_player_queue[1]
+                                auto_player_queue.remove(player_2)
+                                auto_player_queue.remove(search_for_player_name(player_name))
+                            else:
+                                continue
+                            if player_2.aval is False:
+                                continue
+                            # start a game:
+                            player_2.set_aval(False)
+                            player_2.set_tic('O')
+                            search_for_player_name(player_name).set_aval(False)
+                            search_for_player_name(player_name).set_tic('X')
+                            new_game = Game(game_counter, search_for_player_name(player_name), player_2)
+                            games_list.append(new_game)
+                            ret = ""
+                            ret += game_starting + player_2.player_name + newline + icon_assignment + x_icon + carriage
+                            self.request.sendall(ret.encode())
+                            ret = ""
+                            ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
+                            player_2.fd.sendall(ret.encode())
+                            game_counter += 1
+                            current_game = new_game
                         else:
                             self.request.sendall(name_taken.encode())
                     else:
                         self.request.sendall(bad_format.encode())
-
 
                 elif 'LOGIN ' in string_message:
                     return_str = string_message.split("LOGIN ")[1]
@@ -266,7 +301,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         ret = ""
                         ret += who_success
                         for player in player_list:
-                            if player.player_name != player_name and player.aval is True: #and player.auto is None:
+                            if player.player_name != player_name and player.aval is True and not player.auto:
                                 ret += player.player_name
                                 ret += comma
                         ret += carriage
@@ -279,7 +314,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         username = return_str.split("\r\n")[0]
                         if search_for_player_name(username) is not None:
                             player = search_for_player_name(username)
-                            if player.aval:
+                            if player.aval and not player.auto:
                                 new_game = Game(game_counter, search_for_player_name(player_name), player)
                                 games_list.append(new_game)
                                 search_for_player_name(player_name).set_aval(False)
@@ -383,6 +418,68 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 current_game.player_x.fd.sendall(you_lost.encode())
                                 current_game.player_o.aval = True
                                 games_list.remove(current_game)
+
+                            if check_win_conditions(current_game.board_array) > 0:
+                                if auto_logged:
+                                    auto_player_queue.append(current_game.player_o)
+                                    current_game.player_x.aval = True
+                                    current_game.player_o.aval = True
+                                    auto_player_queue.append(current_game.player_x)
+                                if not not auto_player_queue:
+                                    player_2 = auto_player_queue[0]
+                                    if player_2 is search_for_player_name(player_name):
+                                        if len(auto_player_queue) == 1:
+                                            continue
+                                        player_2 = auto_player_queue[1]
+                                    auto_player_queue.remove(player_2)
+                                    auto_player_queue.remove(search_for_player_name(player_name))
+                                else:
+                                    continue
+                                if player_2.aval is False:
+                                    continue
+                                # start a game:
+                                player_2.set_aval(False)
+                                player_2.set_tic('O')
+                                search_for_player_name(player_name).set_aval(False)
+                                search_for_player_name(player_name).set_tic('X')
+                                new_game = Game(game_counter, search_for_player_name(player_name), player_2)
+                                games_list.append(new_game)
+                                ret = ""
+                                ret += game_starting + player_2.player_name + newline + icon_assignment + x_icon + carriage
+                                self.request.sendall(ret.encode())
+                                ret = ""
+                                ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
+                                player_2.fd.sendall(ret.encode())
+                                game_counter += 1
+                                current_game = new_game
+                                if not not auto_player_queue:
+                                    player_2 = auto_player_queue[0]
+                                    if player_2 is search_for_player_name(player_name):
+                                        if len(auto_player_queue) == 1:
+                                            continue
+                                        player_2 = auto_player_queue[1]
+                                    auto_player_queue.remove(player_2)
+                                    auto_player_queue.remove(search_for_player_name(player_name))
+                                else:
+                                    continue
+                                if player_2.aval is False:
+                                    continue
+                                # start a game:
+                                player_2.set_aval(False)
+                                player_2.set_tic('O')
+                                search_for_player_name(player_name).set_aval(False)
+                                search_for_player_name(player_name).set_tic('X')
+                                new_game = Game(game_counter, search_for_player_name(player_name), player_2)
+                                games_list.append(new_game)
+                                ret = ""
+                                ret += game_starting + player_2.player_name + newline + icon_assignment + x_icon + carriage
+                                self.request.sendall(ret.encode())
+                                ret = ""
+                                ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
+                                player_2.fd.sendall(ret.encode())
+                                game_counter += 1
+                                current_game = new_game
+
 
                         else:
                             self.request.sendall(invalid_move.encode())
