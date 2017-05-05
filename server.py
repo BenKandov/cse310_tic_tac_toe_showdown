@@ -192,6 +192,8 @@ good_opponent_move = "200 OECALP\n"
 x = 'X'
 o = 'O'
 you_won = "200 WON\nYou win.\r\n"
+you_tie = "200 TIE\nYou tied.\r\n"
+opp_tie = "200 OTIE\nYou tied\r\n"
 you_lost = "200 LOSE\n"
 dot = '.'
 exit_success = '200 TIXE\nSuccesful exit\r\n'
@@ -418,66 +420,45 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 current_game.player_x.fd.sendall(you_lost.encode())
                                 current_game.player_o.aval = True
                                 games_list.remove(current_game)
-
-                            if check_win_conditions(current_game.board_array) > 0:
+                            tie = True
+                            for row in current_game.board_array:
+                                for item in row:
+                                    if item == '.':
+                                        tie = False
+                            if check_win_conditions(current_game.board_array) > 0 or tie:
                                 if auto_logged:
                                     auto_player_queue.append(current_game.player_o)
+                                    auto_player_queue.append(current_game.player_x)
                                     current_game.player_x.aval = True
                                     current_game.player_o.aval = True
-                                    auto_player_queue.append(current_game.player_x)
-                                if not not auto_player_queue:
-                                    player_2 = auto_player_queue[0]
-                                    if player_2 is search_for_player_name(player_name):
-                                        if len(auto_player_queue) == 1:
-                                            continue
-                                        player_2 = auto_player_queue[1]
-                                    auto_player_queue.remove(player_2)
-                                    auto_player_queue.remove(search_for_player_name(player_name))
-                                else:
-                                    continue
-                                if player_2.aval is False:
-                                    continue
-                                # start a game:
-                                player_2.set_aval(False)
-                                player_2.set_tic('O')
-                                search_for_player_name(player_name).set_aval(False)
-                                search_for_player_name(player_name).set_tic('X')
-                                new_game = Game(game_counter, search_for_player_name(player_name), player_2)
-                                games_list.append(new_game)
-                                ret = ""
-                                ret += game_starting + player_2.player_name + newline + icon_assignment + x_icon + carriage
-                                self.request.sendall(ret.encode())
-                                ret = ""
-                                ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
-                                player_2.fd.sendall(ret.encode())
-                                game_counter += 1
-                                current_game = new_game
-                                if not not auto_player_queue:
-                                    player_2 = auto_player_queue[0]
-                                    if player_2 is search_for_player_name(player_name):
-                                        if len(auto_player_queue) == 1:
-                                            continue
-                                        player_2 = auto_player_queue[1]
-                                    auto_player_queue.remove(player_2)
-                                    auto_player_queue.remove(search_for_player_name(player_name))
-                                else:
-                                    continue
-                                if player_2.aval is False:
-                                    continue
-                                # start a game:
-                                player_2.set_aval(False)
-                                player_2.set_tic('O')
-                                search_for_player_name(player_name).set_aval(False)
-                                search_for_player_name(player_name).set_tic('X')
-                                new_game = Game(game_counter, search_for_player_name(player_name), player_2)
-                                games_list.append(new_game)
-                                ret = ""
-                                ret += game_starting + player_2.player_name + newline + icon_assignment + x_icon + carriage
-                                self.request.sendall(ret.encode())
-                                ret = ""
-                                ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
-                                player_2.fd.sendall(ret.encode())
-                                game_counter += 1
+
+                                    if not not auto_player_queue:
+                                        player_2 = auto_player_queue[0]
+                                        if player_2 is search_for_player_name(player_name):
+                                            if len(auto_player_queue) == 1:
+                                                continue
+                                            player_2 = auto_player_queue[1]
+                                        auto_player_queue.remove(player_2)
+                                        auto_player_queue.remove(search_for_player_name(player_name))
+                                    else:
+                                        continue
+
+                                    # start a game:
+                                    player_2.set_aval(False)
+                                    player_2.set_tic('O')
+                                    search_for_player_name(player_name).set_aval(False)
+                                    search_for_player_name(player_name).set_tic('X')
+                                    new_game = Game(game_counter, search_for_player_name(player_name), player_2)
+                                    games_list.append(new_game)
+                                    ret = ""
+                                    ret += game_starting + player_2.player_name + newline + icon_assignment + x_icon + carriage
+                                    self.request.sendall(ret.encode())
+                                    ret = ""
+                                    ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
+                                    player_2.fd.sendall(ret.encode())
+                                    game_counter += 1
+                                    current_game = new_game
+
 
 
                         else:
