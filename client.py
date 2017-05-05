@@ -87,6 +87,16 @@ def handle_msg(msg, client_soc):
     else:
         print(msg[1])
 
+def autologin(exec_args):
+    if len(exec_args['c_args']) < 1:
+        print('You must choose a name to login as')
+    elif len(exec_args['c_args'][0]) > 50:
+        print('Your username can only be 50 characters at most')
+    else:
+        username = exec_args['c_args'][0]
+        protocol_cmd = 'AUTOLOGIN %s\r\n' % (username,)
+        exec_args['socket'].send(protocol_cmd.encode())
+
 commands = {
     'help': help_cmd,
     'login': login,
@@ -111,8 +121,8 @@ if __name__ == '__main__':
         read_list = [ stdin, client_soc ]
 
         if len(argv) > 3:
-            # if the being run with the automatch flag, then send a quick AUTOMATCH req
-            client_soc.send('AUTOLOGIN\r\n'.encode())
+            # if being run with the automatch flag, then change the login command to autologin
+            commands['login'] = autologin
         else:
             # client can make more advanced requests if not being automatched
             commands['games'] = games
