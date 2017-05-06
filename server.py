@@ -9,6 +9,8 @@ class Player:
         self.player_name = player_name
         self.fd = fd
         self.auto = False
+        self.current_game = None
+        self.turn = False
 
     def set_auto(self):
         self.auto = True
@@ -211,7 +213,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
         logged_in = False
         in_lobby = False
         in_game = False
-        current_game = None
+
         auto_logged = False
 
         while 1:
@@ -223,7 +225,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                 if "EXIT" in string_message:
 
                     self.request.sendall(exit_success.encode())
-
+                    auto_player_queue.remove(search_for_player_name(player_name))
                     player_list.remove(search_for_player_name(player_name))
                     break
                 else:
@@ -270,7 +272,10 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                             ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
                             player_2.fd.sendall(ret.encode())
                             game_counter += 1
-                            current_game = new_game
+                            player_2.current_game = new_game
+                            search_for_player_name(player_name).current_game = new_game
+                            search_for_player_name(player_name).turn = True
+                            player_2.turn = False
                         else:
                             self.request.sendall(name_taken.encode())
                     else:
@@ -330,7 +335,11 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
                                 player.fd.sendall(ret.encode())
                                 game_counter += 1
-                                current_game = new_game
+                                player.current_game = new_game
+                                search_for_player_name(player_name).current_game = new_game
+                                search_for_player_name(player_name).turn = True
+                                player.turn = False
+
                             else:
                                 self.request.sendall(busy_player_name.encode())
                         else:
@@ -363,83 +372,84 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
             #GAME STATE
             elif search_for_player_name(player_name) is not None and search_for_player_name(
                         player_name).aval is False:
-                if current_game is None:
-                    for game in games_list:
-                        if game.player_o == search_for_player_name(player_name):
-                            current_game = game
-                            break
+
+
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
 
                 if "PLACE " in string_message:
                     return_str = string_message.split("PLACE")[1]
-                    if current_game.turn is not search_for_player_name(player_name):
+                    if not search_for_player_name(player_name).turn:
                         self.request.sendall(wrong_turn.encode())
                     elif "\r\n" in return_str:
                         n = return_str.split("\r\n")[0]
-                        if move_on_board(current_game.board_array, int(n), search_for_player_name(player_name).tic):
+                        if move_on_board(search_for_player_name(player_name).current_game.board_array, int(n), search_for_player_name(player_name).tic):
                             ret = ""
                             ret += good_move
-                            for row in current_game.board_array:
+                            for row in search_for_player_name(player_name).current_game.board_array:
                                 for item in row:
                                     ret += item
                                 ret += comma
                             ret += carriage
                             self.request.sendall(ret.encode())
                             ret = ""
-                            if current_game.turn is current_game.player_x:
+                            if search_for_player_name(player_name).current_game.turn is search_for_player_name(player_name).current_game.player_x:
                                 ret += good_opponent_move
-                                for row in current_game.board_array:
+                                for row in search_for_player_name(player_name).current_game.board_array:
                                     for item in row:
                                         ret += item
                                     ret += comma
                                 ret += carriage
-                                current_game.player_o.fd.sendall(ret.encode())
-                                current_game.turn = current_game.player_o
+                                search_for_player_name(player_name).current_game.player_o.fd.sendall(ret.encode())
+                                search_for_player_name(player_name).current_game.turn = search_for_player_name(player_name).current_game.player_o
+                                search_for_player_name(player_name).current_game.player_o.turn = True
+                                search_for_player_name(player_name).current_game.player_x.turn = False
                             else:
                                 ret += good_opponent_move
-                                for row in current_game.board_array:
+                                for row in search_for_player_name(player_name).current_game.board_array:
                                     for item in row:
                                         ret += item
                                     ret += comma
                                 ret += carriage
-                                current_game.player_x.fd.sendall(ret.encode())
-                                current_game.turn = current_game.player_x
+                                search_for_player_name(player_name).current_game.player_x.fd.sendall(ret.encode())
+                                search_for_player_name(player_name).current_game.turn = search_for_player_name(player_name).current_game.player_x
+                                search_for_player_name(player_name).current_game.player_x.turn = True
+                                search_for_player_name(player_name).current_game.player_o.turn = False
                             # check win conditions and end game if necessary
 
-                            if check_win_conditions(current_game.board_array) == 1:
-                                current_game.player_x.fd.sendall(you_won.encode())
-                                current_game.player_x.aval = True
-                                current_game.player_o.fd.sendall(you_lost.encode())
-                                current_game.player_o.aval = True
-                                games_list.remove(current_game)
+                            if check_win_conditions(search_for_player_name(player_name).current_game.board_array) == 1:
+                                search_for_player_name(player_name).current_game.player_x.fd.sendall(you_won.encode())
+                                search_for_player_name(player_name).current_game.player_x.aval = True
+                                search_for_player_name(player_name).current_game.player_o.fd.sendall(you_lost.encode())
+                                search_for_player_name(player_name).current_game.player_o.aval = True
+                                games_list.remove(search_for_player_name(player_name).current_game)
 
-                            elif check_win_conditions(current_game.board_array) == 2:
-                                current_game.player_o.fd.sendall(you_won.encode())
-                                current_game.player_x.aval = True
-                                current_game.player_x.fd.sendall(you_lost.encode())
-                                current_game.player_o.aval = True
+                            elif check_win_conditions(search_for_player_name(player_name).current_game.board_array) == 2:
+                                search_for_player_name(player_name).current_game.player_o.fd.sendall(you_won.encode())
+                                search_for_player_name(player_name).current_game.player_x.aval = True
+                                search_for_player_name(player_name).current_game.player_x.fd.sendall(you_lost.encode())
+                                search_for_player_name(player_name).current_game.player_o.aval = True
                                 games_list.remove(current_game)
                             tie = True
-                            for row in current_game.board_array:
+                            for row in search_for_player_name(player_name).current_game.board_array:
                                 for item in row:
                                     if item == '.':
                                         tie = False
                             if tie:
                                 self.request.sendall(you_tie.encode())
-                                current_game.player_x.aval = True
-                                current_game.player_o.aval = True
-                                if current_game.player_x is search_for_player_name(player_name):
-                                    current_game.player_o.fd.sendall(opp_tie.encode())
+                                search_for_player_name(player_name).current_game.player_x.aval = True
+                                search_for_player_name(player_name).current_game.player_o.aval = True
+                                if search_for_player_name(player_name).current_game.player_x is search_for_player_name(player_name):
+                                    search_for_player_name(player_name).current_game.player_o.fd.sendall(opp_tie.encode())
                                 else:
-                                    current_game.player_x.fd.sendall(opp_tie.encode())
-                                games_list.remove(current_game)
-                            if check_win_conditions(current_game.board_array) > 0 or tie:
+                                    search_for_player_name(player_name).current_game.player_x.fd.sendall(opp_tie.encode())
+                                games_list.remove(search_for_player_name(player_name).current_game)
+                            if check_win_conditions(search_for_player_name(player_name).current_game.board_array) > 0 or tie:
                                 if auto_logged:
-                                    auto_player_queue.append(current_game.player_o)
-                                    auto_player_queue.append(current_game.player_x)
-                                    current_game.player_x.aval = True
-                                    current_game.player_o.aval = True
+                                    auto_player_queue.append(search_for_player_name(player_name).current_game.player_o)
+                                    auto_player_queue.append(search_for_player_name(player_name).current_game.player_x)
+                                    search_for_player_name(player_name).current_game.player_x.aval = True
+                                    search_for_player_name(player_name).current_game.player_o.aval = True
 
                                     if not not auto_player_queue:
                                         player_2 = auto_player_queue[0]
@@ -466,7 +476,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                     ret += game_starting_o + player_name + newline + icon_assignment + o_icon + carriage
                                     player_2.fd.sendall(ret.encode())
                                     game_counter += 1
-                                    current_game = new_game
+                                    search_for_player_name(player_name).current_game = new_game
 
 
 
@@ -480,20 +490,20 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                     if '\r\n' in return_str:
 
                         self.request.sendall(exit_success.encode())
-                        if search_for_player_name(player_name) is current_game.player_x:
-                            current_game.player_o.fd.sendall(opponent_exited.encode())
-                            current_game.player_o.aval = True
+                        if search_for_player_name(player_name) is search_for_player_name(player_name).current_game.player_x:
+                            search_for_player_name(player_name).current_game.player_o.fd.sendall(opponent_exited.encode())
+                            search_for_player_name(player_name).current_game.player_o.aval = True
                             if auto_logged:
-                                auto_player_queue.append(current_game.player_o)
+                                auto_player_queue.append(search_for_player_name(player_name).current_game.player_o)
 
                         else:
-                            current_game.player_x.fd.sendall(opponent_exited.encode())
-                            current_game.player_x.aval = True
+                            search_for_player_name(player_name).current_game.player_x.fd.sendall(opponent_exited.encode())
+                            search_for_player_name(player_name).current_game.player_x.aval = True
                             if auto_logged:
-                                auto_player_queue.append(current_game.player_x)
+                                auto_player_queue.append(search_for_player_name(player_name).current_game.player_x)
 
                         player_list.remove(search_for_player_name(player_name))
-                        games_list.remove(current_game)
+                        games_list.remove(search_for_player_name(player_name).current_game)
                         break
                     else:
                         self.request.sendall(bad_format.encode())
