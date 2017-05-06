@@ -203,17 +203,19 @@ opponent_exited = '200 OTIXE\nYour opponenet just exited.\r\n'
 
 class ThreadedTCPCommunicationHandler(BaseRequestHandler):
     def handle(self):
+        #all the game state global variables
         global player_list
         global games_list
         global game_counter
         global auto_player_queue
+        #booleans to designate game state
         player_name = ""
         logged_in = False
         in_lobby = False
         in_game = False
 
         auto_logged = False
-
+        # a while loop in which all communication with socket is processed
         while 1:
             # This is where auto-login searches for a partner for you
             if auto_logged and search_for_player_name(player_name).aval is True:
@@ -280,6 +282,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(bad_format.encode())
 
                 elif 'LOGIN ' in string_message:
+                    #login player
                     return_str = string_message.split("LOGIN ")[1]
                     if '\r\n' in return_str:
                         username = return_str.split("\r\n")[0]
@@ -300,6 +303,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                 string_message = self.data.decode("utf-8")
                 if not search_for_player_name(player_name).aval:
                     continue
+                #Who command
                 if "WHO" in string_message:
                     return_str = string_message.split("WHO")[1]
                     if '\r\n' in return_str:
@@ -313,6 +317,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(ret.encode())
                     else:
                         self.request.sendall(bad_format.encode())
+                #PLAY command
                 elif "PLAY " in string_message:
                     return_str = string_message.split("PLAY ")[1]
                     if '\r\n' in return_str:
@@ -344,7 +349,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                             self.request.sendall(invalid_player_name.encode())
                     else:
                         self.request.sendall(bad_format.encode())
-
+                #GAMES command
                 elif "GAMES" in string_message:
                     return_str = string_message.split("GAMES")[1]
                     if '\r\n' in return_str:
@@ -357,6 +362,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         self.request.sendall(ret.encode())
                     else:
                         self.request.sendall(bad_format.encode())
+                #exit command
                 elif "EXIT" in string_message:
                     return_str = string_message.split("EXIT")[1]
                     if '\r\n' in return_str:
@@ -374,7 +380,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
 
                 self.data = self.request.recv(1024)
                 string_message = self.data.decode("utf-8")
-
+                #PLACE command while in game
                 if "PLACE " in string_message:
                     return_str = string_message.split("PLACE")[1]
                     if not search_for_player_name(player_name).turn:
@@ -429,6 +435,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 search_for_player_name(player_name).current_game.player_o.aval = True
                                 games_list.remove(search_for_player_name(player_name).current_game)
                             tie = True
+                            #Checks tie and ends game if necessary
                             for row in search_for_player_name(player_name).current_game.board_array:
                                 for item in row:
                                     if item == '.':
@@ -443,6 +450,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                     search_for_player_name(player_name).current_game.player_x.fd.sendall(opp_tie.encode())
                                 games_list.remove(search_for_player_name(player_name).current_game)
                             if check_win_conditions(search_for_player_name(player_name).current_game.board_array) > 0 or tie:
+                                #if player was autologged, makes new game
                                 if auto_logged:
                                     auto_player_queue.append(search_for_player_name(player_name).current_game.player_o)
                                     auto_player_queue.append(search_for_player_name(player_name).current_game.player_x)
@@ -483,7 +491,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                             self.request.sendall(invalid_move.encode())
                     else:
                         self.request.sendall(bad_format.encode())
-
+                #handles exit while in a game
                 elif "EXIT" in string_message:
                     return_str = string_message.split("EXIT")[1]
                     if '\r\n' in return_str:
