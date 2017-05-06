@@ -429,7 +429,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 search_for_player_name(player_name).current_game.player_x.aval = True
                                 search_for_player_name(player_name).current_game.player_x.fd.sendall(you_lost.encode())
                                 search_for_player_name(player_name).current_game.player_o.aval = True
-                                games_list.remove(current_game)
+                                games_list.remove(search_for_player_name(player_name).current_game)
                             tie = True
                             for row in search_for_player_name(player_name).current_game.board_array:
                                 for item in row:
@@ -503,6 +503,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                 auto_player_queue.append(search_for_player_name(player_name).current_game.player_x)
 
                         player_list.remove(search_for_player_name(player_name))
+
                         games_list.remove(search_for_player_name(player_name).current_game)
                         break
                     else:
