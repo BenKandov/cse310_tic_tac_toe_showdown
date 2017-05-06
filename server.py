@@ -2,7 +2,7 @@ from socketserver import *
 
 
 
-
+#This is a class definition for the player object, which keeps state information
 class Player:
     def __init__(self, player_name, fd):
         self.aval = True
@@ -38,9 +38,7 @@ class Game:
 # ids will be generated from this incrementing game_counter
 game_counter = 0
 
-# variables for keeping track of game state
-
-
+# variables for keeping track of game state and games/players running
 player_list = []
 games_list = []
 auto_player_queue = []
