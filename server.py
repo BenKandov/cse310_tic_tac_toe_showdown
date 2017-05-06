@@ -484,6 +484,8 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                                     game_counter += 1
                                     player_2.current_game = new_game
                                     search_for_player_name(player_name).current_game = new_game
+                                    search_for_player_name(player_name).turn = True
+                                    player_2.turn = False
 
 
 
