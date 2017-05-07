@@ -6,7 +6,19 @@ import select
 running = True
 
 def help_cmd(exec_args):
-    print('This is the help menu')
+    print('\n')
+    print('These commands can be used at all times:')
+    print('--------------------------------------------------')
+    print('help - prints help menu')
+    print('login [username] - logs in a person under the specified username')
+    print('place [cell] - places your mark on the the tic-tac-toe board on the specified cell number')
+    print('exit - exits the program')
+    print('These commands can only be used when AUTOLOGIN is not specified:')
+    print('--------------------------------------------------')
+    print('games - prints all current games going on now')
+    print('who - show which games are currently being played')
+    print('play [username] - start a game with the player with the specified username')
+    print('\n')
 
 def login(exec_args):
     if len(exec_args['c_args']) < 1:
@@ -16,7 +28,7 @@ def login(exec_args):
     else:
         username = exec_args['c_args'][0]
         protocol_cmd = 'LOGIN %s\r\n' % (username,)
-        print('SENDING TO SERVER : %s', protocol_cmd)
+        #print('SENDING TO SERVER : %s', protocol_cmd)
         exec_args['socket'].send(protocol_cmd.encode())
 
 def place(exec_args):
@@ -25,14 +37,14 @@ def place(exec_args):
     else:
         cell = exec_args['c_args'][0]
         protocol_cmd = 'PLACE %s\r\n' % (cell,)
-        print('SENDING TO SERVER : %s', protocol_cmd)
+        #print('SENDING TO SERVER : %s', protocol_cmd)
         exec_args['socket'].send(protocol_cmd.encode())
 
 def exit_game(exec_args):
     global running
 
     protocol_cmd = 'EXIT\r\n'
-    print('SENDING TO SERVER : %s', protocol_cmd)
+    #print('SENDING TO SERVER : %s', protocol_cmd)
     exec_args['socket'].send(protocol_cmd.encode())
     exec_args['socket'].close()
     running = False
@@ -51,7 +63,7 @@ def play(exec_args):
     else:
         opponent = exec_args['c_args'][0]
         protocol_cmd = 'PLAY %s\r\n' % (opponent,)
-        print('SENDING TO SERVER : %s', protocol_cmd)
+        #print('SENDING TO SERVER : %s', protocol_cmd)
         exec_args['socket'].send(protocol_cmd.encode())
 
 def handle_msg(msg, client_soc):
@@ -62,7 +74,7 @@ def handle_msg(msg, client_soc):
         for x in to_print:
             print(x)
     elif msg[0] == '200 SEMAG':
-        if msg[1] == '':
+        if msg[1].strip() == '':
             print('There are no games currently in progress')
         else: 
             print('These are the current games:')
@@ -79,6 +91,12 @@ def handle_msg(msg, client_soc):
         to_print = msg[1].split(',')
         for x in to_print:
             print(x)
+        # used for a certain condition
+        if len(msg) > 3:
+            # you got sent 200 WON
+            client_soc.send('garbage\r\n'.encode())
+            client_soc.recv(1024)
+            print('Good job! You win!')
     elif msg[0] == "200 WON":
         # send ENTER
         client_soc.send('garbage\r\n'.encode())
@@ -89,6 +107,9 @@ def handle_msg(msg, client_soc):
         print(msg[2])
         # send ENTER
         client_soc.send('ENTER'.encode())
+    elif msg[0] == "200 YALP":
+        print(msg[1])
+        print(msg[2])
     elif msg[0] == "200 OTIXE":
         print(msg[1])
         # send ENTER
@@ -99,6 +120,8 @@ def handle_msg(msg, client_soc):
         client_soc.send('ENTER'.encode())
         client_soc.recv(1024)
         print('The game ended in a tie\n')
+    elif msg[0] == "200 LOSE":
+        print('Sorry, but you lost this game :(')
     else:
         print(msg[1])
 
@@ -110,7 +133,7 @@ def autologin(exec_args):
     else:
         username = exec_args['c_args'][0]
         protocol_cmd = 'AUTOLOGIN %s\r\n' % (username,)
-        print('SENDING TO SERVER : %s', protocol_cmd)
+        #print('SENDING TO SERVER : %s', protocol_cmd)
         exec_args['socket'].send(protocol_cmd.encode())
 
 commands = {
@@ -171,6 +194,4 @@ if __name__ == '__main__':
                     # you can read from the socket 
                     message = client_soc.recv(1024).decode()
                     message = message.split('\n')
-                    # DEBUG statements
-                    print('DEBUG: ' + '-'.join(message))
                     handle_msg(message, client_soc)
