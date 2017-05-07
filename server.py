@@ -528,5 +528,5 @@ class ThreadedTCPServer(ThreadingMixIn, TCPServer):
 if __name__ == "__main__":
     HOST = "localhost"
     PORT = 1234
-    server = ThreadedTCPServer((HOST, PORT), ThreadedTCPCommunicationHandler)
+    server = ThreadedTCPServer(('', PORT), ThreadedTCPCommunicationHandler)
     server.serve_forever()
