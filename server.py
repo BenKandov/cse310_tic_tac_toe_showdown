@@ -356,7 +356,7 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                         ret = ""
                         ret += games_success
                         for game in games_list:
-                            ret = ""
+
                             ret += player_one_intro + game.player_x.player_name + player_two_intro + game.player_o.player_name + comma
                         ret += carriage
                         self.request.sendall(ret.encode())
