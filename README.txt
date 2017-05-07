@@ -1,0 +1,1 @@
+To open the zip, double click it, or open the terminal and type "unzip" and the name of the file if you're on *-nix. First run the server with "python3 server.py". For each client, run "client [HOSTNAME] 1234" to connect.
