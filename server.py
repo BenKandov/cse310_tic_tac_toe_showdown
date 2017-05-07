@@ -510,10 +510,10 @@ class ThreadedTCPCommunicationHandler(BaseRequestHandler):
                             search_for_player_name(player_name).current_game.player_x.aval = True
                             if auto_logged:
                                 auto_player_queue.append(search_for_player_name(player_name).current_game.player_x)
-
+                        games_list.remove(search_for_player_name(player_name).current_game)
                         player_list.remove(search_for_player_name(player_name))
 
-                        games_list.remove(search_for_player_name(player_name).current_game)
+
                         break
                     else:
                         self.request.sendall(bad_format.encode())
