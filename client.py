@@ -81,7 +81,7 @@ def handle_msg(msg, client_soc):
             print(x)
     elif msg[0] == "200 WON":
         # send ENTER
-        client_soc.send('ENTER'.encode())
+        client_soc.send('garbage\r\n'.encode())
         client_soc.recv(1024)
         print('Good job! You win!')
     elif  msg[0] == '200 OYALP':
